@@ -2,7 +2,6 @@ package wlog
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -13,8 +12,6 @@ import (
 	"runtime"
 	"time"
 )
-
-var ErrMissingSecretKey = errors.New("missing wlog secret key")
 
 var DefaultClient = Client{}
 
@@ -82,10 +79,6 @@ func (c *Client) write(path, mime string, r io.Reader) (err error) {
 	key := c.SecretKey
 	if key == "" {
 		key = os.Getenv("WLOG_KEY")
-		if key == "" {
-			err = ErrMissingSecretKey
-			return
-		}
 	}
 
 	u := &url.URL{Scheme: "https", Host: "wlog.cloud"}
@@ -105,7 +98,9 @@ func (c *Client) write(path, mime string, r io.Reader) (err error) {
 
 	req.Header.Set("User-Agent", "go wlog/0.1 "+runtime.Version())
 	req.Header.Set("Content-Type", mime)
-	req.Header.Set("Authorization", c.SecretKey)
+	if c.SecretKey != "" {
+		req.Header.Set("Authorization", c.SecretKey)
+	}
 
 	client := http.DefaultClient
 	if c.Client != nil {
